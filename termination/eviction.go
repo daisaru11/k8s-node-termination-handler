@@ -75,7 +75,7 @@ func (p *podEvictionHandler) EvictPods(excludePods map[string]string, timeout ti
 	// Evict regular pods first.
 	var gracePeriod int64
 	// Reserve time for system pods if regular pods have adequate time to exit gracefully.
-	if timeout >= 2*p.systemPodGracePeriod {
+	if timeout >= p.systemPodGracePeriod {
 		gracePeriod = int64(timeout.Seconds() - p.systemPodGracePeriod.Seconds())
 	}
 	deleteOptions := &metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod}
