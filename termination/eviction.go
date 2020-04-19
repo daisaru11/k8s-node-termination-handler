@@ -15,11 +15,12 @@
 package termination
 
 import (
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -64,7 +65,7 @@ func (p *podEvictionHandler) EvictPods(excludePods map[string]string, timeout ti
 	// Separate pods in kube-system namespace such that they can be evicted at the end.
 	// This is especially helpful in scenarios like reclaiming logs prior to node termination.
 	for _, pod := range pods.Items {
-		if ns, exists := excludePods[pod.Name]; !exists || ns != pod.Namespace {
+		if !isExcludePod(excludePods, &pod) {
 			if pod.Namespace == systemNamespace {
 				systemPods = append(systemPods, pod)
 			} else {
@@ -123,4 +124,14 @@ func (p *podEvictionHandler) waitForPodNotFound(podName, ns string, timeout time
 		}
 		return false, nil
 	})
+}
+
+func isExcludePod(excludePods map[string]string, pod *v1.Pod) bool {
+	for excludePodPrefix, excludePodNamespace := range excludePods {
+		if strings.HasPrefix(pod.Name, excludePodPrefix) && excludePodNamespace == pod.Namespace {
+			return true
+		}
+	}
+
+	return false
 }
